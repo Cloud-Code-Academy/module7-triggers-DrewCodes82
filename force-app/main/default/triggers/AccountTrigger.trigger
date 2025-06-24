@@ -29,7 +29,18 @@ trigger AccountTrigger on Account (before insert) {
                 acc.BillingState = acc.ShippingState;
                 acc.BillingCountry = acc.ShippingCountry;
                 acc.BillingPostalCode = acc.ShippingPostalCode;
-            } 
+            }
+            /*
+            * Question 3
+            * Account Trigger
+            * When an account is inserted set the rating to 'Hot' if the Phone, Website, and Fax ALL have a value.
+            * Trigger should only fire on insert.
+            */ 
+            if (acc.Phone != null 
+                && acc.Website != null
+                && acc.Fax != null) {
+                    acc.Rating = 'Hot';
+                }
         }
 
     }
