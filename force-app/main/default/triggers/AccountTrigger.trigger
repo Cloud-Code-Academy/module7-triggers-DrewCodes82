@@ -1,4 +1,4 @@
-trigger AccountTrigger on Account (before insert) {
+trigger AccountTrigger on Account (before insert, after insert) {
 
 
     if (Trigger.isBefore && Trigger.IsInsert){
@@ -41,10 +41,36 @@ trigger AccountTrigger on Account (before insert) {
                 && acc.Fax != null) {
                     acc.Rating = 'Hot';
                 }
-        }
-
+            
+            
+            }          
     }
 
-    
+    if (Trigger.isAfter && Trigger.isInsert){
+        /*
+        * Question 4
+        * Account Trigger
+        * When an account is inserted create a contact related to the account with the following default values:
+        * LastName = 'DefaultContact'
+        * Email = 'default@email.com'
+        * Trigger should only fire on insert.
+        */ 
+        List<Contact> contactsForInsert = new List<Contact>();
+
+        for (Account acc : Trigger.new) {
+            Contact con = new Contact();
+            con.AccountId = acc.Id;
+            con.LastName = 'DefaultContact';
+            con.Email = 'default@email.com';
+            contactsForInsert.add(con);
+        }
+
+        if (Schema.sObjectType.Contact.isCreateable()
+            && Schema.sObjectType.Contact.fields.AccountId.isCreateable()
+            && Schema.sObjectType.Contact.fields.LastName.isCreateable()
+            && Schema.sObjectType.Contact.fields.Email.isCreateable()) {
+                Database.insert(contactsForInsert);
+        }
+    }
 
 }
