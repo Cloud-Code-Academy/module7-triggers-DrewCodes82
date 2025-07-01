@@ -1,4 +1,4 @@
-trigger OpportunityTrigger on Opportunity (before update, before delete) {
+trigger OpportunityTrigger on Opportunity (before update, after update, before delete) {
 
     if (Trigger.isBefore && Trigger.isUpdate) {
         /*
@@ -13,6 +13,52 @@ trigger OpportunityTrigger on Opportunity (before update, before delete) {
                 opp.addError('Opportunity amount must be greater than 5000');
             }
         }
+    }
+
+    if (Trigger.isAfter && Trigger.isUpdate && !TriggerControl.hasRunOpportunityContactUpdate){
+        /*
+        * Question 7
+        * Opportunity Trigger
+        * When an opportunity is updated set the primary contact on the opportunity to the contact on the same account with the title of 'CEO'.
+        * Trigger should only fire on update.
+        */
+        TriggerControl.hasRunOpportunityContactUpdate = true;
+        // Get the AccountIds related to the Opportunities
+        Set<Id> accountIds = new Set<Id>();
+        for (Opportunity opp : Trigger.new) {
+            if (opp.AccountId != null) {
+                accountIds.add(opp.AccountId);
+            }
+        }
+        // Get the Contact related to the Accounts where the Title = CEO
+        Map<Id, Contact> accountIdToCEO = new Map<Id, Contact>();
+        for (Contact con : [
+            SELECT Id, AccountId
+            FROM Contact 
+            WHERE AccountId IN :accountIds 
+            AND Title = 'CEO'
+            ]) {
+            if (!accountIdToCEO.containsKey(con.AccountId)) {
+                accountIdToCEO.put(con.AccountId, con);
+            }
+                            }
+        // Create List of Opportunities to be updated
+        List<Opportunity> oppsToUpdate = new List<Opportunity>();
+
+        // Loop through new Opportunities to be updated, set the fields, add the opp to List
+        for (Opportunity opp : Trigger.new) {
+            if (accountIdToCEO.containsKey(opp.AccountId)) {
+                Opportunity updatedOpp = new Opportunity();
+                updatedOpp.Id = opp.Id;
+                updatedOpp.Primary_Contact__c = accountIdToCEO.get(opp.AccountId).Id;
+                oppsToUpdate.add(updatedOpp);
+            }
+        }
+
+        if (!oppsToUpdate.isEmpty()) {
+            update oppsToUpdate;
+        }
+    
     }
 
     if (Trigger.isBefore && Trigger.isDelete) {
